@@ -36,3 +36,35 @@ struct VideoReaderState
 
     SwsContext *sws_scaler_ctx;
 }; // struct VideoReaderState
+
+/**
+ * @param state
+ * @param filename
+ * @return true
+ * @return false
+ */
+bool video_reader_open(VideoReaderState *state, const char *filename);
+
+/**
+ * @param state
+ * @param frame_buffer
+ * @param pts
+ * @return true
+ * @return false
+ */
+bool video_reader_read_frame(VideoReaderState *state, uint8_t *frame_buffer, int64_t *pts);
+
+/**
+ * @param state
+ * @param ts
+ * @return true
+ * @return false
+ */
+bool video_reader_seek_frame(VideoReaderState *state, int64_t ts);
+
+/**
+ * @param state
+ */
+void video_reader_close(VideoReaderState *state);
+
+#endif
