@@ -271,3 +271,16 @@ bool video_reader_seek_frame(VideoReaderState *state, int64_t ts)
 
     return true;
 }
+
+/**
+ * @param state
+ */
+void video_reader_close(VideoReaderState *state)
+{
+    sws_freeContext(state->sws_scaler_ctx);
+    avformat_close_input(&state->av_format_ctx);
+    avformat_free_context(state->av_format_ctx);
+    av_frame_free(&state->av_frame);
+    av_packet_free(&state->av_packet);
+    avcodec_free_context(&state->av_codec_ctx);
+}
