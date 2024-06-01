@@ -53,4 +53,15 @@ int main(int argc, const char **argv)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+    constexpr int ALIGNMENT = 128;
+    const int frame_width = vr_state.width;
+    const int frame_height = vr_state.height;
+    uint8_t frame_data;
+
+    if (posix_memalign((void **)&frame_data, ALIGNMENT, frame_width * frame_height * 4) != 0)
+    {
+        printf("Couldn't allocate frame buffer\n");
+        return 1;
+    }
 }
