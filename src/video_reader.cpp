@@ -111,4 +111,34 @@ bool video_reader_open(VideoReaderState *state, const char *filename)
         printf("Couldn't create AVCodecContext\n");
         return false;
     }
+
+    if (avcodec_parameters_to_context(av_codec_ctx, av_codec_params) < 0)
+    {
+        printf("Couldn't initialize AVCodecContext\n");
+        return false;
+    }
+
+    if (avcodec_open2(av_codec_ctx, av_codec, NULL) < 0)
+    {
+        printf("Couldn't open codec\n");
+        return false;
+    }
+
+    av_frame = av_frame_alloc();
+
+    if (!av_frame)
+    {
+        printf("Couldn't allocate AVFrame\n");
+        return false;
+    }
+
+    av_packet = av_packet_alloc();
+
+    if (!av_packet)
+    {
+        printf("Couldn't allocate AVPacket\n");
+        return false;
+    }
+
+    return true;
 }
