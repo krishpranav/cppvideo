@@ -142,3 +142,78 @@ bool video_reader_open(VideoReaderState *state, const char *filename)
 
     return true;
 }
+
+/**
+ * @param state
+ * @param frame_buffer
+ * @param pts
+ * @return true
+ * @return false
+ */
+bool video_reader_read_frame(VideoReaderState *state, uint8_t *frame_buffer, int64_t *pts)
+{
+    auto &width = state->width;
+    auto &height = state->height;
+    auto &av_format_ctx = state->av_format_ctx;
+    auto &av_codec_ctx = state->av_codec_ctx;
+    auto &video_stream_index = state->video_stream_index;
+    auto &av_frame = state->av_frame;
+    auto &av_packet = state->av_packet;
+    auto &sws_scaler_ctx = state->sws_scaler_ctx;
+
+    int response;
+
+    while (av_read_frame(av_format_ctx, av_packet) >= 0)
+    {
+        if (av_packet->stream_index != video_stream_index)
+        {
+            av_packet_unref(av_packet);
+            continue;
+        }
+
+        response = avcodec_send_packet(av_codec_ctx, av_packet);
+
+        if (response < 0)
+        {
+            printf("Failed to decode packet: %s\n", av_make_error(response));
+            return false;
+        }
+
+        response = avcodec_receive_frame(av_codec_ctx, av_frame);
+
+        if (response == AVERROR(EAGAIN) || response == AVERROR_EOF)
+        {
+            av_packet_unref(av_packet);
+        }
+        else if (response < 0)
+        {
+            printf("Failed to decode packet: %s\n", av_make_error(response));
+            return false;
+        }
+
+        av_packet_unref(av_packet);
+        break;
+    }
+
+    *pts = av_frame->pts;
+
+    if (!sws_scaler_ctx)
+    {
+        auto source_pix_fmt = correct_for_deprecated_pixel_format(av_codec_ctx->pix_fmt);
+        sws_scaler_ctx = sws_getContext(width, heigh, source_pix_fmt,
+                                        width, height, AV_PIX_FMT_RGB0,
+                                        SWS_BILINEAR, NULL, NULL, NULL);
+    }
+
+    if (!sws_scaler_ctx)
+    {
+        printf("Couldn't initialize sw scaller\n");
+        return false;
+    }
+
+    uint8_t dest[4] = {frame_buffer, NULL, NULL, NULL};
+    int dest_linesize[4] = {width * 4, 0, 0, 0};
+    sws_scaler(sws_scaler_ctx, av_frame->data, av_frame->linesize, 0, av_frame->height, dest, dest_linesize);
+
+    return true;
+}
