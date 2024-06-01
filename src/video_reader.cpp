@@ -67,4 +67,48 @@ bool video_reader_open(VideoReaderState *state, const char *filename)
         printf("Couldn't created AVFormatContext\n");
         return false;
     }
+
+    if (avformat_open_input(&av_format_ctx, filename, NULL, NULL) != 0)
+    {
+        printf("Couldn't open file\n");
+        return false;
+    }
+
+    video_stream_index = -1;
+
+    AVCodecParameters *av_codec_params;
+    AVCodec *av_codec;
+
+    for (int i = 0; i < av_format_ctx->nb_streams; ++i)
+    {
+        av_codec_params = av_format_ctx->streams[i]->codecpar;
+        av_codec = const_cast<AVCodec *>(avcodec_find_decoder(av_codec_params->codec_id));
+        if (!av_codec)
+        {
+            continue;
+        }
+
+        if (av_codec_params->codec_type == AVMEDIA_TYPE_VIDEO)
+        {
+            video_stream_index = i;
+            width = av_codec_params->width;
+            height = av_codec_params->height;
+            time_base = av_format_ctx->streams[i]->time_base;
+            break;
+        }
+    }
+
+    if (video_stream_index == -1)
+    {
+        printf("Couldn't find  valid video stream inside file\n");
+        return false;
+    }
+
+    av_codec_ctx = avcodec_alloc_context3(av_codec);
+
+    if (!av_codec_ctx)
+    {
+        printf("Couldn't create AVCodecContext\n");
+        return false;
+    }
 }
